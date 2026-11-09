@@ -11,6 +11,8 @@ A full stack task management app. It has a Next.js front end communicating with 
 You will need two terminal windows to run both the frontend and backend simultaneously.
 
 ### 1. Start the API
+This is assuming you have WSL
+
 Open your first terminal and navigate to the `api` directory:
 \`\`\`bash
 cd api
@@ -42,6 +44,9 @@ The Next.js application will start on **http://localhost:3000**. Open this URL i
 ## Scope & Cuts
 The following features were scoped out of MVP:
 
-1. **Automated Tests:** Cut in favor of manual testing (I manually tested creating, editing, filtering, deleting tasks, and JWT login states in the browser).
-2. **Search:** Status filter was prioritized over full text search.
-3. **Deployment:** Skipped to avoid CORS and Vercel integration issues under time constraints
+Given the time constraints, the following features were scoped out to ensure the core CRUD features and data integrity were flawless:
+
+1.  **Authentication:** Full JWT/OAuth sign-in was cut. The data model and API queries are structured to support a `user_id`, but it is currently hardcoded to `1` to simulate a signed-in state.
+2.  **Automated Tests:** Cut in favor of comprehensive manual testing and strict runtime validation in the API controllers.
+3.  **Advanced Sorting/Search:** The core status filter was prioritized over full text search.
+4.  **Deployment:** Skipped to avoid CORS and Vercel/Render integration issues under time pressure. The local developer experience was prioritized.
