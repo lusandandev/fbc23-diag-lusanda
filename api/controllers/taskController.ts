@@ -5,12 +5,17 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
     try {
         const db = await getDb();
         const { status } = req.query;
-        const userId = 1; // mock it for now, circle back if there is time 
+        const userId = 1;
+
+        if (status && !['pending', 'completed'].includes(status as string)) {
+            res.status(400).json({ success: false, error: 'Invalid status filter. Must be pending or completed.' });
+            return;
+        }
 
         let query = 'SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC';
         const params: any[] = [userId];
 
-        if (status === 'pending' || status === 'completed') {
+        if (status) {
             query = 'SELECT * FROM tasks WHERE user_id = ? AND status = ? ORDER BY created_at DESC';
             params.push(status);
         }
@@ -26,21 +31,32 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
     try {
         const db = await getDb();
         const userId = 1;
-        const { title, description, due_date } = req.body;
+        let { title, description, due_date } = req.body;
 
-        if (!title || typeof title !== 'string' || title.trim() === '') {
-            res.status(400).json({ success: false, error: 'Title is required and must be a string.' });
+        if (!title || typeof title !== 'string' || title.trim() === '' || title.length > 255) {
+            res.status(400).json({ success: false, error: 'Title is required, must be a string, and under 255 characters.' });
+            return;
+        }
+        if (description !== undefined && description !== null && typeof description !== 'string') {
+            res.status(400).json({ success: false, error: 'Description must be a string or null.' });
+            return;
+        }
+        if (due_date !== undefined && due_date !== null && typeof due_date !== 'string') {
+            res.status(400).json({ success: false, error: 'Due date must be a string or null.' });
             return;
         }
 
+        title = title.trim();
+        description = description ? description.trim() : null;
+
         const result = await db.run(
             `INSERT INTO tasks (user_id, title, description, due_date) VALUES (?, ?, ?, ?)`,
-            [userId, title.trim(), description?.trim() || null, due_date || null]
+            [userId, title, description, due_date || null]
         );
 
         res.status(201).json({
             success: true,
-            data: { id: result.lastID, title, description, status: 'pending', due_date }
+            data: { id: result.lastID, title, description, status: 'pending', due_date: due_date || null }
         });
     } catch (error) {
         next(error);
@@ -59,25 +75,54 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
             return;
         }
 
-        if (status && !['pending', 'completed'].includes(status)) {
-            res.status(400).json({ success: false, error: 'Status must be pending or completed.' });
+        const updates: string[] = [];
+        const params: any[] = [];
+
+        if (title !== undefined) {
+            if (typeof title !== 'string' || title.trim() === '' || title.length > 255) {
+                res.status(400).json({ success: false, error: 'Invalid title.' });
+                return;
+            }
+            updates.push('title = ?');
+            params.push(title.trim());
+        }
+
+        if (description !== undefined) {
+            if (description !== null && typeof description !== 'string') {
+                res.status(400).json({ success: false, error: 'Invalid description.' });
+                return;
+            }
+            updates.push('description = ?');
+            params.push(description ? description.trim() : null);
+        }
+
+        if (status !== undefined) {
+            if (!['pending', 'completed'].includes(status)) {
+                res.status(400).json({ success: false, error: 'Status must be pending or completed.' });
+                return;
+            }
+            updates.push('status = ?');
+            params.push(status);
+        }
+
+        if (due_date !== undefined) {
+            if (due_date !== null && typeof due_date !== 'string') {
+                res.status(400).json({ success: false, error: 'Invalid due date.' });
+                return;
+            }
+            updates.push('due_date = ?');
+            params.push(due_date);
+        }
+
+        if (updates.length === 0) {
+            res.status(400).json({ success: false, error: 'No fields provided to update.' });
             return;
         }
 
-        if (title !== undefined && (typeof title !== 'string' || title.trim() === '')) {
-            res.status(400).json({ success: false, error: 'Title cannot be empty.' });
-            return;
-        }
+        const query = `UPDATE tasks SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`;
+        params.push(id, userId);
 
-        const result = await db.run(
-            `UPDATE tasks
-             SET title = COALESCE(?, title),
-                 description = COALESCE(?, description),
-                 status = COALESCE(?, status),
-                 due_date = COALESCE(?, due_date)
-             WHERE id = ? AND user_id = ?`,
-            [title, description, status, due_date, id, userId]
-        );
+        const result = await db.run(query, params);
 
         if (result.changes === 0) {
             res.status(404).json({ success: false, error: 'Task not found or unauthorized.' });
