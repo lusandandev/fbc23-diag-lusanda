@@ -1,5 +1,6 @@
 import sqlite3 from 'sqlite3';
 import { Database, open } from 'sqlite';
+import bcrypt from 'bcryptjs';
 
 let dbPromise: Promise<Database<sqlite3.Database, sqlite3.Statement>> | null = null;
 
@@ -10,10 +11,13 @@ export const getDb = () => {
       driver: sqlite3.Database
     }).then(async (db) => {
       await db.exec('PRAGMA foreign_keys = ON;');
+
       await db.exec(`
         CREATE TABLE IF NOT EXISTS users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          email TEXT UNIQUE NOT NULL
+          email TEXT UNIQUE NOT NULL,
+          password TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS tasks (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,8 +29,15 @@ export const getDb = () => {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (user_id) REFERENCES users (id)
         );
-        INSERT OR IGNORE INTO users (id, email) VALUES (1, 'lusanda@example.com');
       `);
+
+      // Seed the test user
+      const defaultPassword = await bcrypt.hash('password123', 10);
+      await db.run(
+        `INSERT OR IGNORE INTO users (id, email, password) VALUES (1, 'lusanda@example.com', ?)`,
+        [defaultPassword]
+      );
+
       console.log("Database initialized and schemas verified.");
       return db;
     });
