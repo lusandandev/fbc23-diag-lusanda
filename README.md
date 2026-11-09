@@ -7,7 +7,7 @@ A full stack task management app. It has a Next.js front end communicating with 
 You will need two terminal windows to run both the frontend and backend simultaneously.
 
 ### 1. Start the API
-###This is assuming you have WSL
+This is assuming you have WSL
 
 Open your first terminal and navigate to the `api` directory:
 \`\`\`bash
