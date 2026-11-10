@@ -43,5 +43,5 @@ The Next.js application will start on **http://localhost:3000**. Open this URL i
 The following features were scoped out of MVP:
 
 1. **Automated Tests:** Cut in favor of manual testing (I manually tested creating, editing, filtering, deleting tasks, and JWT login states in the browser).
-2. **Search:** Status filter was prioritized over full text search.
-3. **Deployment:** Skipped to avoid CORS and Vercel integration issues under time constraints
+2. **Search:** Only status filter was implemented
+3. **Deployment
