@@ -1,6 +1,6 @@
 # Mini Task Tracker
 
-A full stack task management app. It has a Next.js front end communicating with an Express.js REST API, persisted by a SQLite database.
+A full stack task management app. It has a Next.js front end talking to an Express.js REST API, persisted by a SQLite database.
 
 ## Prerequisites
 - **Node.js:** I tested this on Node v22.
@@ -44,4 +44,4 @@ The following features were scoped out of MVP:
 
 1. **Automated Tests:** Cut in favor of manual testing (I manually tested creating, editing, filtering, deleting tasks, and JWT login states in the browser).
 2. **Search:** Only status filter was implemented
-3. **Deployment
+3. **Deployment**
