@@ -1,3 +1,9 @@
 **/node_modules/
-.env
+**/.env
+!**/.env.example
 api/dev.db
+api/dist/
+web/.next/
+web/out/
+web/next-env.d.ts
+web/*.tsbuildinfo
