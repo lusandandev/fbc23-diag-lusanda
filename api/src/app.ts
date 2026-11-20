@@ -6,10 +6,11 @@ import { createAuthRoutes } from './routes/auth.routes';
 import { createTaskRoutes } from './routes/task.routes';
 import { AuthController } from './controllers/auth.controller';
 import { TaskController } from './controllers/task.controller';
+import { JwtService } from './services/jwt.service';
 
 export type AppDependencies = {
   webOrigin: string;
-  jwtSecret: string;
+  jwtService: JwtService;
   authController: AuthController;
   taskController: TaskController;
 };
@@ -25,7 +26,7 @@ export const createApp = (dependencies: AppDependencies): Express => {
   });
 
   app.use(createAuthRoutes(dependencies.authController));
-  app.use('/tasks', createRequireAuth(dependencies.jwtSecret), createTaskRoutes(dependencies.taskController));
+  app.use('/tasks', createRequireAuth(dependencies.jwtService), createTaskRoutes(dependencies.taskController));
 
   app.use((_request: Request, response: Response) => {
     response.status(404).json({ success: false, error: 'Endpoint not found.' });

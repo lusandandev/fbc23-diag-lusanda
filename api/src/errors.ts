@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly fieldErrors?: Record<string, string>;
@@ -10,9 +12,7 @@ export class AppError extends Error {
   }
 }
 
-export const validationError = (error: {
-  issues: Array<{ path: PropertyKey[]; message: string }>;
-}): AppError => {
+export const validationError = (error: z.ZodError): AppError => {
   const fieldErrors: Record<string, string> = {};
 
   for (const issue of error.issues) {
@@ -25,4 +25,11 @@ export const validationError = (error: {
     .join('. ');
 
   return new AppError(400, message || 'Request validation failed', fieldErrors);
+};
+
+/** Parse untrusted input once and convert Zod failures into the API's standard 400 error. */
+export const parseOrThrow = <Schema extends z.ZodType>(schema: Schema, input: unknown): z.output<Schema> => {
+  const parsed = schema.safeParse(input);
+  if (!parsed.success) throw validationError(parsed.error);
+  return parsed.data;
 };

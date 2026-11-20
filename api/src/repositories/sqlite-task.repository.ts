@@ -11,13 +11,13 @@ export class SqliteTaskRepository implements TaskRepository {
     const columns = 'id, title, description, status, due_date, created_at';
 
     if (status) {
-      return this.db.all<TaskRow>(
+      return this.db.all<TaskRow[]>(
         `SELECT ${columns} FROM tasks WHERE user_id = ? AND status = ? ORDER BY created_at DESC, id DESC`,
         [userId, status],
       );
     }
 
-    return this.db.all<TaskRow>(
+    return this.db.all<TaskRow[]>(
       `SELECT ${columns} FROM tasks WHERE user_id = ? ORDER BY created_at DESC, id DESC`,
       [userId],
     );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import type { Task, TaskInput } from '../types/task';
 
 type TaskFormProps = {
@@ -12,15 +12,9 @@ type TaskFormProps = {
 };
 
 export default function TaskForm({ initialTask, isSaving, fieldErrors, onSubmit, onCancel }: TaskFormProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState('');
-
-  useEffect(() => {
-    setTitle(initialTask?.title ?? '');
-    setDescription(initialTask?.description ?? '');
-    setDueDate(initialTask?.due_date ?? '');
-  }, [initialTask]);
+  const [title, setTitle] = useState(initialTask?.title ?? '');
+  const [description, setDescription] = useState(initialTask?.description ?? '');
+  const [dueDate, setDueDate] = useState(initialTask?.due_date ?? '');
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

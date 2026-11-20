@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiClientError, apiRequest } from '../lib/api';
 import type { Task, TaskFilter, TaskInput } from '../types/task';
 
@@ -20,10 +20,12 @@ export const useTasks = ({ token, onUnauthorized }: UseTasksOptions) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const latestRefreshId = useRef(0);
 
   const handleError = useCallback((caught: unknown) => {
     if (caught instanceof ApiClientError && caught.status === 401) {
       setTasks([]);
+      setError(null);
       onUnauthorized();
       return;
     }
@@ -31,30 +33,44 @@ export const useTasks = ({ token, onUnauthorized }: UseTasksOptions) => {
     setError(caught instanceof Error ? caught.message : 'An unexpected error occurred.');
   }, [onUnauthorized]);
 
-  const refreshTasks = useCallback(async (silent = false) => {
+  const refreshTasks = useCallback(async (silent = false, effectIsCurrent: () => boolean = () => true) => {
+    const requestId = ++latestRefreshId.current;
+    const isCurrent = () => effectIsCurrent() && requestId === latestRefreshId.current;
+
     if (!token) {
-      setTasks([]);
-      setIsLoading(false);
+      if (isCurrent()) {
+        setTasks([]);
+        setIsLoading(false);
+      }
       return;
     }
 
-    if (!silent) setIsLoading(true);
-    setError(null);
+    if (!silent && isCurrent()) setIsLoading(true);
+    if (isCurrent()) setError(null);
 
     const query = filter === 'all' ? '' : `?status=${filter}`;
 
     try {
       const result = await apiRequest<TasksResponse>(`/tasks${query}`, {}, token);
-      setTasks(result.data);
+      if (isCurrent()) setTasks(result.data);
     } catch (caught) {
-      handleError(caught);
+      if (isCurrent()) handleError(caught);
     } finally {
-      if (!silent) setIsLoading(false);
+      if (!silent && isCurrent()) setIsLoading(false);
     }
   }, [filter, handleError, token]);
 
   useEffect(() => {
-    void refreshTasks();
+    let ignore = false;
+
+    // Defer request initiation so this effect does not synchronously trigger state updates.
+    Promise.resolve().then(() => {
+      if (!ignore) void refreshTasks(false, () => !ignore);
+    });
+
+    return () => {
+      ignore = true;
+    };
   }, [refreshTasks]);
 
   const saveTask = useCallback(async (input: TaskInput, taskId?: number) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import { apiRequest } from '../lib/api';
 
 type LoginResponse = {
@@ -8,15 +8,32 @@ type LoginResponse = {
   token: string;
 };
 
-export const useAuth = () => {
-  const [token, setToken] = useState<string | null>(null);
-  const [isReady, setIsReady] = useState(false);
+const listeners = new Set<() => void>();
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) setToken(storedToken);
-    setIsReady(true);
-  }, []);
+const subscribe = (listener: () => void) => {
+  listeners.add(listener);
+  window.addEventListener('storage', listener);
+
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener('storage', listener);
+  };
+};
+
+const getTokenSnapshot = (): string | null => localStorage.getItem('token');
+const getServerTokenSnapshot = (): string | null => null;
+const getReadySnapshot = (): boolean => true;
+const getServerReadySnapshot = (): boolean => false;
+
+const notifyTokenChange = () => {
+  listeners.forEach((listener) => listener());
+};
+
+export const useAuth = () => {
+  // useSyncExternalStore keeps localStorage access out of server rendering and avoids
+  // synchronous state updates inside an effect during client hydration.
+  const token = useSyncExternalStore(subscribe, getTokenSnapshot, getServerTokenSnapshot);
+  const isReady = useSyncExternalStore(subscribe, getReadySnapshot, getServerReadySnapshot);
 
   const login = useCallback(async (email: string, password: string) => {
     const result = await apiRequest<LoginResponse>('/login', {
@@ -25,12 +42,12 @@ export const useAuth = () => {
     });
 
     localStorage.setItem('token', result.token);
-    setToken(result.token);
+    notifyTokenChange();
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem('token');
-    setToken(null);
+    notifyTokenChange();
   }, []);
 
   return { token, isReady, login, logout };
