@@ -21,14 +21,14 @@ export const createSchema = async (db: SqliteDatabase): Promise<void> => {
     );
   `);
 
-  const userColumns = await db.all<{ name: string }>('PRAGMA table_info(users)');
+  const userColumns = await db.all<{ name: string }[]>('PRAGMA table_info(users)');
   if (!userColumns.some((column) => column.name === 'password_hash')) {
     throw new Error(
       'The existing database uses an older schema. Delete api/dev.db once so the updated schema can be created.',
     );
   }
 
-  const taskForeignKeys = await db.all<{ table: string; on_delete: string }>(
+  const taskForeignKeys = await db.all<{ table: string; on_delete: string }[]>(
     'PRAGMA foreign_key_list(tasks)',
   );
   const userForeignKey = taskForeignKeys.find((foreignKey) => foreignKey.table === 'users');

@@ -20,7 +20,7 @@ cd api
 npm install
 ```
 
-Copy `.env.example` to `.env` and replace the example `JWT_SECRET` with a private random value. For example:
+The API folder includes `.env.example`. Copy it to `.env` and replace the example `JWT_SECRET` with a private random value. The command below is run from inside `api/`:
 
 ```bash
 cp .env.example .env
@@ -103,18 +103,21 @@ api/
     controllers/           HTTP request/response handling
     routes/                Route-to-controller mappings
     middleware/            JWT authentication and central error handling
-  tests/                   Schema and service tests using fake repositories
+  tests/                   Schema, service, authentication and repository tests
+  scripts/                 Cross-platform test discovery runner
 web/
   app/                     Next.js page and global styles
   components/              Login, task form/list/item, filter and error banner
   hooks/                   Authentication and task state/fetching
   lib/                     API client
-  types/                   Front-end types derived from the API Task type
+  types/                   Front-end Task types, independent of API dependencies
 ```
 
-The dependency direction is controllers → services → repository interfaces. The composition root (`api/src/server.ts`) creates the SQLite repositories and injects them. Services contain no HTTP or SQL logic, and repositories are the only application layer that queries task and user records.
+The dependency direction is controllers → services → repository interfaces. The composition root (`api/src/server.ts`) creates the SQLite repositories and injects them. `JwtService` centralises token signing and verification. Services contain no HTTP or SQL logic, and repositories are the only application layer that queries task and user records. The front end maintains its own small Task type so `web/` does not depend on API source files or API packages.
 
 ## Checks
+
+The API test script discovers all TypeScript test files recursively, so adding a new `*.test.ts` file does not require editing `package.json`.
 
 From `api/`:
 
@@ -124,11 +127,11 @@ npm run typecheck
 npm run build
 ```
 
-The 14 automated tests cover Zod validation and service rules using fake repositories; they do not require SQLite or a network connection. From `web/`, run `npm run lint` and `npm run build` for front-end checks.
+The **15 automated tests** are discovered from every `*.test.ts` file under `api/tests`, including tests added later. They cover Zod validation, authentication behaviour, service rules and repository SQL ownership filters. Tests use fake repositories/database adapters and do not require a running SQLite file or network connection. From `web/`, run `npm run lint` and `npm run build` for front-end checks.
 
 ## Database and ERD
 
-The logical relationship is one user to zero or many tasks. Each task belongs to exactly one user. The SQLite schema enforces a unique user email, a task status check, and `ON DELETE CASCADE` from users to tasks. The updated logical ERD is included at [`task-tracker-erd.pdf`](./task-tracker-erd.pdf).
+The logical relationship is one user to zero or many tasks. Each task belongs to exactly one user. The SQLite schema enforces a unique user email, a task status check, and `ON DELETE CASCADE` from users to tasks. The updated logical ERD is included at [`tracker-logical-erd.pdf`](./tracker-logical-erd.pdf).
 
 The refactor does not include database migrations. If you have a Week 1 `api/dev.db`, stop the API and delete that file once before starting the refactored version; the updated schema will then be created. Task and user data in that old local database will be lost.
 

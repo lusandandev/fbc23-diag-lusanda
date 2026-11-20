@@ -16,9 +16,12 @@ export default function Home() {
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [taskFormVersion, setTaskFormVersion] = useState(0);
 
   const handleUnauthorized = useCallback(() => {
     logout();
+    setEditingTask(null);
+    setFieldErrors({});
     setSessionNotice('Session expired. Please log in again.');
   }, [logout]);
 
@@ -43,6 +46,7 @@ export default function Home() {
   const handleLogout = () => {
     logout();
     setEditingTask(null);
+    setFieldErrors({});
     setSessionNotice(null);
   };
 
@@ -51,6 +55,7 @@ export default function Home() {
     try {
       await saveTask(input, editingTask?.id);
       setEditingTask(null);
+      setTaskFormVersion((version) => version + 1);
     } catch (caught) {
       if (caught instanceof ApiClientError) setFieldErrors(caught.fields);
     }
@@ -90,6 +95,7 @@ export default function Home() {
 
       <ErrorBanner message={error} />
       <TaskForm
+        key={`${editingTask?.id ?? 'new'}-${taskFormVersion}`}
         initialTask={editingTask}
         isSaving={isSaving}
         fieldErrors={fieldErrors}

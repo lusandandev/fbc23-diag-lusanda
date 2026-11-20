@@ -1,12 +1,12 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { AppError } from '../errors';
 import type { UserRepository } from '../repositories/interfaces';
+import { JwtService } from './jwt.service';
 
 export class AuthService {
   constructor(
     private readonly users: UserRepository,
-    private readonly jwtSecret: string,
+    private readonly tokens: JwtService,
   ) {}
 
   async login(email: string, password: string): Promise<string> {
@@ -16,6 +16,6 @@ export class AuthService {
       throw new AppError(401, 'Invalid credentials');
     }
 
-    return jwt.sign({ id: user.id }, this.jwtSecret, { expiresIn: '24h' });
+    return this.tokens.signUserToken(user.id);
   }
 }

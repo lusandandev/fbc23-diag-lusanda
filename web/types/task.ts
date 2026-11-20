@@ -1,7 +1,14 @@
-import type { Task as ApiTask, TaskStatus as ApiTaskStatus } from '../../api/src/types/task';
+export type TaskStatus = 'pending' | 'completed';
 
-export type Task = ApiTask;
-export type TaskStatus = ApiTaskStatus;
+export type Task = {
+  id: number;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  due_date: string | null;
+  created_at: string;
+};
+
 export type TaskFilter = 'all' | TaskStatus;
 
 export type TaskInput = {
