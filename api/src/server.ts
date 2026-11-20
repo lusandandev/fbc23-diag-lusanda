@@ -11,8 +11,11 @@ import { AuthService } from './services/auth.service';
 import { JwtService } from './services/jwt.service';
 import { TaskService } from './services/task.service';
 
+// Bootstraps configuration, database, dependencies, and the HTTP server
 const startServer = async (): Promise<void> => {
   const config = loadConfig();
+
+  // Initialize SQLite database and seed demo data in development
   const db = await openDatabase(config);
   await createSchema(db);
 
@@ -20,6 +23,7 @@ const startServer = async (): Promise<void> => {
     await seedDemoUsers(db);
   }
 
+  // Wire repositories, services, and controllers
   const userRepository = new SqliteUserRepository(db);
   const taskRepository = new SqliteTaskRepository(db);
   const jwtService = new JwtService(config.jwtSecret);
@@ -35,6 +39,7 @@ const startServer = async (): Promise<void> => {
     taskController,
   });
 
+  // Exit cleanly if the HTTP server fails to bind to the configured port
   const failToListen = (error?: Error) => {
     if (!error) return;
     console.error(`API failed to listen on port ${config.port}: ${error.message}`);
@@ -54,6 +59,7 @@ const startServer = async (): Promise<void> => {
   server.on('error', failToListen);
 };
 
+// Catch unhandled initialization errors and terminate the process
 startServer().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : 'Unknown startup error';
   console.error(`API startup failed: ${message}`);
