@@ -1,5 +1,6 @@
 import type { SqliteDatabase } from './connection';
 
+// Initializes tables and guards against incompatible legacy SQLite schemas
 export const createSchema = async (db: SqliteDatabase): Promise<void> => {
   await db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -21,6 +22,7 @@ export const createSchema = async (db: SqliteDatabase): Promise<void> => {
     );
   `);
 
+  // Fail fast if an older `users` table lacks `password_hash` instead of silently breaking auth
   const userColumns = await db.all<{ name: string }[]>('PRAGMA table_info(users)');
   if (!userColumns.some((column) => column.name === 'password_hash')) {
     throw new Error(
@@ -28,6 +30,7 @@ export const createSchema = async (db: SqliteDatabase): Promise<void> => {
     );
   }
 
+  // Ensure cascading user deletion is present on existing `tasks` tables
   const taskForeignKeys = await db.all<{ table: string; on_delete: string }[]>(
     'PRAGMA foreign_key_list(tasks)',
   );
